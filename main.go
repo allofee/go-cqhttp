@@ -55,6 +55,8 @@ func init() {
 		goConf.HttpConfig.Port = conf.Port
 		goConf.WSConfig.Host = conf.WSHost
 		goConf.WSConfig.Port = conf.WSPort
+		goConf.EnableHeartbeat = conf.EnableHeartbeat
+		goConf.HeartbeatInterval = conf.HeartbeatInterval
 		if conf.PostUrl != "" {
 			goConf.HttpConfig.PostUrls[conf.PostUrl] = conf.Secret
 		}
@@ -179,6 +181,9 @@ func main() {
 	}
 	for _, rc := range conf.ReverseServers {
 		server.NewWebsocketClient(rc, conf.AccessToken, b).Run()
+	}
+	if conf.EnableHeartbeat && conf.HeartbeatInterval != 0 {
+		b.StartHeartbeat(conf.HeartbeatInterval)
 	}
 	log.Info("资源初始化完成, 开始处理信息.")
 	log.Info("アトリは、高性能ですから!")

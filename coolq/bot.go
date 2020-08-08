@@ -186,6 +186,15 @@ func (bot *CQBot) dispatchEventMessage(m MSG) {
 	}
 }
 
+func (bot *CQBot) StartHeartbeat(timeInterval uint16) {
+	for range time.Tick(time.Millisecond * time.Duration(timeInterval)) {
+		bot.dispatchEventMessage(MSG{
+			"post_type":    "meta_event",
+			"meta_event_type": "heartbeat",
+		})
+	}
+}
+
 func formatGroupName(group *client.GroupInfo) string {
 	return fmt.Sprintf("%s(%d)", group.Name, group.Code)
 }
