@@ -6,16 +6,18 @@ import (
 )
 
 type JsonConfig struct {
-	Uin            int64                         `json:"uin"`
-	Password       string                        `json:"password"`
-	EnableDB       bool                          `json:"enable_db"`
-	AccessToken    string                        `json:"access_token"`
-	ReLogin        bool                          `json:"relogin"`
-	ReLoginDelay   int                           `json:"relogin_delay"`
-	HttpConfig     *GoCQHttpConfig               `json:"http_config"`
-	WSConfig       *GoCQWebsocketConfig          `json:"ws_config"`
-	ReverseServers []*GoCQReverseWebsocketConfig `json:"ws_reverse_servers"`
-	Debug          bool                          `json:"debug"`
+	Uin                 int64                         `json:"uin"`
+	Password            string                        `json:"password"`
+	EnableDB            bool                          `json:"enable_db"`
+	AccessToken         string                        `json:"access_token"`
+	ReLogin             bool                          `json:"relogin"`
+	ReLoginDelay        int                           `json:"relogin_delay"`
+	HttpConfig          *GoCQHttpConfig               `json:"http_config"`
+	WSConfig            *GoCQWebsocketConfig          `json:"ws_config"`
+	ReverseServers      []*GoCQReverseWebsocketConfig `json:"ws_reverse_servers"`
+	Debug               bool                          `json:"debug"`
+	EnableHeartbeat     bool                          `json:"enable_heartbeat"`
+	HeartbeatInterval   uint16                        `json:"heartbeat_interval"`
 }
 
 type CQHttpApiConfig struct {
@@ -35,6 +37,8 @@ type CQHttpApiConfig struct {
 	AccessToken                  string `json:"access_token"`
 	Secret                       string `json:"secret"`
 	PostMessageFormat            string `json:"post_message_format"`
+	EnableHeartbeat              bool   `json:"enable_heartbeat"`
+	HeartbeatInterval            uint16 `json:"heartbeat_interval"`
 }
 
 type GoCQHttpConfig struct {
@@ -83,6 +87,8 @@ func DefaultConfig() *JsonConfig {
 				ReverseReconnectInterval: 3000,
 			},
 		},
+		EnableHeartbeat: false,
+		HeartbeatInterval: 15000,
 	}
 }
 
