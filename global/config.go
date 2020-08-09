@@ -68,7 +68,7 @@ func DefaultConfig() *JsonConfig {
 		ReLogin:      true,
 		ReLoginDelay: 3,
 		HttpConfig: &GoCQHttpConfig{
-			Enabled:  true,
+			Enabled:  false,
 			Host:     "0.0.0.0",
 			Port:     5700,
 			PostUrls: map[string]string{},
@@ -87,8 +87,8 @@ func DefaultConfig() *JsonConfig {
 				ReverseReconnectInterval: 3000,
 			},
 		},
-		EnableHeartbeat: false,
-		HeartbeatInterval: 15000,
+		EnableHeartbeat: true,
+		HeartbeatInterval: 50000,
 	}
 }
 
