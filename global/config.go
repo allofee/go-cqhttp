@@ -6,18 +6,21 @@ import (
 )
 
 type JsonConfig struct {
-	Uin                 int64                         `json:"uin"`
-	Password            string                        `json:"password"`
-	EnableDB            bool                          `json:"enable_db"`
-	AccessToken         string                        `json:"access_token"`
-	ReLogin             bool                          `json:"relogin"`
-	ReLoginDelay        int                           `json:"relogin_delay"`
-	HttpConfig          *GoCQHttpConfig               `json:"http_config"`
-	WSConfig            *GoCQWebsocketConfig          `json:"ws_config"`
-	ReverseServers      []*GoCQReverseWebsocketConfig `json:"ws_reverse_servers"`
-	Debug               bool                          `json:"debug"`
-	EnableHeartbeat     bool                          `json:"enable_heartbeat"`
-	HeartbeatInterval   uint16                        `json:"heartbeat_interval"`
+	Uin               int64                         `json:"uin"`
+	Password          string                        `json:"password"`
+	EncryptPassword   bool                          `json:"encrypt_password"`
+	PasswordEncrypted string                        `json:"password_encrypted"`
+	EnableDB          bool                          `json:"enable_db"`
+	AccessToken       string                        `json:"access_token"`
+	ReLogin           bool                          `json:"relogin"`
+	ReLoginDelay      int                           `json:"relogin_delay"`
+	HttpConfig        *GoCQHttpConfig               `json:"http_config"`
+	WSConfig          *GoCQWebsocketConfig          `json:"ws_config"`
+	ReverseServers    []*GoCQReverseWebsocketConfig `json:"ws_reverse_servers"`
+	PostMessageFormat string                        `json:"post_message_format"`
+	Debug             bool                          `json:"debug"`
+	EnableHeartbeat   bool                          `json:"enable_heartbeat"`
+	HeartbeatInterval uint16                        `json:"heartbeat_interval"`
 }
 
 type CQHttpApiConfig struct {
@@ -45,6 +48,7 @@ type GoCQHttpConfig struct {
 	Enabled  bool              `json:"enabled"`
 	Host     string            `json:"host"`
 	Port     uint16            `json:"port"`
+	Timeout  int32             `json:"timeout"`
 	PostUrls map[string]string `json:"post_urls"`
 }
 
@@ -64,9 +68,10 @@ type GoCQReverseWebsocketConfig struct {
 
 func DefaultConfig() *JsonConfig {
 	return &JsonConfig{
-		EnableDB:     true,
-		ReLogin:      true,
-		ReLoginDelay: 3,
+		EnableDB:          true,
+		ReLogin:           true,
+		ReLoginDelay:      3,
+		PostMessageFormat: "string",
 		HttpConfig: &GoCQHttpConfig{
 			Enabled:  false,
 			Host:     "0.0.0.0",

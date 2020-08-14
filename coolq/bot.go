@@ -25,6 +25,7 @@ type CQBot struct {
 	friendReqCache  sync.Map
 	invitedReqCache sync.Map
 	joinReqCache    sync.Map
+	tempMsgCache    sync.Map
 }
 
 type MSG map[string]interface{}
@@ -59,6 +60,7 @@ func NewQQBot(cli *client.QQClient, conf *global.JsonConfig) *CQBot {
 	bot.Client.OnGroupMemberLeaved(bot.memberLeaveEvent)
 	bot.Client.OnGroupMemberPermissionChanged(bot.memberPermissionChangedEvent)
 	bot.Client.OnNewFriendRequest(bot.friendRequestEvent)
+	bot.Client.OnNewFriendAdded(bot.friendAddedEvent)
 	bot.Client.OnGroupInvited(bot.groupInvitedEvent)
 	bot.Client.OnUserWantJoinGroup(bot.groupJoinReqEvent)
 	return bot
@@ -83,7 +85,7 @@ func (bot *CQBot) GetGroupMessage(mid int32) MSG {
 		if err == nil {
 			return m
 		}
-		log.Warnf("获取信息时出现错误: %v", err)
+		log.Warnf("获取信息时出现错误: %v id: %v", err, mid)
 	}
 	return nil
 }
@@ -92,7 +94,7 @@ func (bot *CQBot) SendGroupMessage(groupId int64, m *message.SendingMessage) int
 	var newElem []message.IMessageElement
 	for _, elem := range m.Elements {
 		if i, ok := elem.(*message.ImageElement); ok {
-			gm, err := bot.Client.UploadGroupImage(groupId, i.Data)
+			gm, err := bot.Client.UploadGroupImage(114514, i.Data)
 			if err != nil {
 				log.Warnf("警告: 群 %v 消息图片上传失败: %v", groupId, err)
 				continue
@@ -101,7 +103,7 @@ func (bot *CQBot) SendGroupMessage(groupId int64, m *message.SendingMessage) int
 			continue
 		}
 		if i, ok := elem.(*message.VoiceElement); ok {
-			gv, err := bot.Client.UploadGroupPtt(groupId, i.Data, int32(len(i.Data)))
+			gv, err := bot.Client.UploadGroupPtt(groupId, i.Data)
 			if err != nil {
 				log.Warnf("警告: 群 %v 消息语音上传失败: %v", groupId, err)
 				continue
@@ -122,7 +124,7 @@ func (bot *CQBot) SendPrivateMessage(target int64, m *message.SendingMessage) in
 		if i, ok := elem.(*message.ImageElement); ok {
 			fm, err := bot.Client.UploadPrivateImage(target, i.Data)
 			if err != nil {
-				log.Warnf("警告: 好友 %v 消息图片上传失败.", target)
+				log.Warnf("警告: 私聊 %v 消息图片上传失败.", target)
 				continue
 			}
 			newElem = append(newElem, fm)
@@ -131,8 +133,17 @@ func (bot *CQBot) SendPrivateMessage(target int64, m *message.SendingMessage) in
 		newElem = append(newElem, elem)
 	}
 	m.Elements = newElem
-	ret := bot.Client.SendPrivateMessage(target, m)
-	return ToGlobalId(target, ret.Id)
+	var id int32
+	if bot.Client.FindFriend(target) != nil {
+		id = bot.Client.SendPrivateMessage(target, m).Id
+	} else {
+		if code, ok := bot.tempMsgCache.Load(target); ok {
+			id = bot.Client.SendTempMessage(code.(int64), target, m).Id
+		} else {
+			return -1
+		}
+	}
+	return ToGlobalId(target, id)
 }
 
 func (bot *CQBot) InsertGroupMessage(m *message.GroupMessage) int32 {
@@ -180,7 +191,7 @@ func (bot *CQBot) dispatchEventMessage(m MSG) {
 			fn(m)
 			end := time.Now()
 			if end.Sub(start) > time.Second*5 {
-				log.Debugf("警告: 事件处理耗时超过 5 秒 (%v秒), 请检查应用是否有堵塞.", end.Sub(start)/time.Second)
+				log.Debugf("警告: 事件处理耗时超过 5 秒 (%v), 请检查应用是否有堵塞.", end.Sub(start))
 			}
 		}()
 	}
