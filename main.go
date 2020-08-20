@@ -51,6 +51,11 @@ func init() {
 			log.Fatalf("创建视频缓存文件夹失败: %v", err)
 		}
 	}
+	if !global.PathExists(global.CACHE_PATH) {
+		if err := os.MkdirAll(global.CACHE_PATH, 0755); err != nil {
+			log.Fatalf("创建发送图片缓存文件夹失败: %v", err)
+		}
+	}
 	if global.PathExists("cqhttp.json") {
 		log.Info("发现 cqhttp.json 将在五秒后尝试导入配置，按 Ctrl+C 取消.")
 		log.Warn("警告: 该操作会删除 cqhttp.json 并覆盖 config.json 文件.")
@@ -197,7 +202,7 @@ func main() {
 	global.Check(cli.ReloadFriendList())
 	log.Infof("共加载 %v 个好友.", len(cli.FriendList))
 	log.Infof("开始加载群列表...")
-	global.Check(cli.ReloadGroupList())
+	global.Check(cli.ReloadGroupList(conf.AsyncLoad))
 	log.Infof("共加载 %v 个群.", len(cli.GroupList))
 	b := coolq.NewQQBot(cli, conf)
 	if conf.PostMessageFormat != "string" && conf.PostMessageFormat != "array" {

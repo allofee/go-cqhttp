@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/xujiajun/nutsdb"
 	"hash/crc32"
+	"math/rand"
 	"path"
 	"sync"
 	"time"
@@ -63,6 +64,19 @@ func NewQQBot(cli *client.QQClient, conf *global.JsonConfig) *CQBot {
 	bot.Client.OnNewFriendAdded(bot.friendAddedEvent)
 	bot.Client.OnGroupInvited(bot.groupInvitedEvent)
 	bot.Client.OnUserWantJoinGroup(bot.groupJoinReqEvent)
+	go func() {
+		for {
+			time.Sleep(time.Second * 5)
+			bot.dispatchEventMessage(MSG{
+				"time":            time.Now().Unix(),
+				"self_id":         bot.Client.Uin,
+				"post_type":       "meta_event",
+				"meta_event_type": "heartbeat",
+				"status":          nil,
+				"interval":        5000,
+			})
+		}
+	}()
 	return bot
 }
 
@@ -94,7 +108,8 @@ func (bot *CQBot) SendGroupMessage(groupId int64, m *message.SendingMessage) int
 	var newElem []message.IMessageElement
 	for _, elem := range m.Elements {
 		if i, ok := elem.(*message.ImageElement); ok {
-			gm, err := bot.Client.UploadGroupImage(114514, i.Data)
+			_, _ = bot.Client.UploadGroupImage(int64(rand.Intn(11451419)), i.Data)
+			gm, err := bot.Client.UploadGroupImage(groupId, i.Data)
 			if err != nil {
 				log.Warnf("警告: 群 %v 消息图片上传失败: %v", groupId, err)
 				continue
@@ -115,6 +130,9 @@ func (bot *CQBot) SendGroupMessage(groupId int64, m *message.SendingMessage) int
 	}
 	m.Elements = newElem
 	ret := bot.Client.SendGroupMessage(groupId, m)
+	if ret == nil || ret.Id == -1 {
+		return -1
+	}
 	return bot.InsertGroupMessage(ret)
 }
 
@@ -133,15 +151,22 @@ func (bot *CQBot) SendPrivateMessage(target int64, m *message.SendingMessage) in
 		newElem = append(newElem, elem)
 	}
 	m.Elements = newElem
-	var id int32
+	var id int32 = -1
 	if bot.Client.FindFriend(target) != nil {
-		id = bot.Client.SendPrivateMessage(target, m).Id
+		msg := bot.Client.SendPrivateMessage(target, m)
+		if msg != nil {
+			id = msg.Id
+		}
 	} else {
 		if code, ok := bot.tempMsgCache.Load(target); ok {
-			id = bot.Client.SendTempMessage(code.(int64), target, m).Id
-		} else {
-			return -1
+			msg := bot.Client.SendTempMessage(code.(int64), target, m)
+			if msg != nil {
+				id = msg.Id
+			}
 		}
+	}
+	if id == -1 {
+		return -1
 	}
 	return ToGlobalId(target, id)
 }
